@@ -1,0 +1,50 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout repo
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2. Log in to Docker Hub
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # 3. Build Docker image
+      - name: Build Docker image
+        run: |
+          docker build -t yourusername/prod-alert-app:latest .
+
+      # 4. Push Docker image
+      - name: Push Docker image
+        run: |
+          docker push yourusername/prod-alert-app:latest
+
+      # 5. Set up kubectl
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.27.0'
+
+      # 6. Configure Kubeconfig
+      - name: Configure kubeconfig
+        run: |
+          echo "${{ secrets.KUBECONFIG_DATA }}" > kubeconfig
+          export KUBECONFIG=$(pwd)/kubeconfig
+
+      # 7. Deploy to Kubernetes
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -f k8s/prod-alert-app.yaml
+          kubectl rollout status deployment prod-alert-app
