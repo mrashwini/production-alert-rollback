@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout code
+      # 1️⃣ Checkout repository
       - name: Checkout repo
         uses: actions/checkout@v3
 
@@ -30,25 +30,25 @@ jobs:
           push: true
           tags: docker.io/${{ secrets.DOCKER_USERNAME }}/prod-alert-app:latest
 
-      - name: Verify cluster connection
-        run: |
-         kubectl config current-context
-         kubectl get nodes
-
-
       # 4️⃣ Setup kubeconfig
       - name: Configure kubeconfig
         run: |
           echo "${{ secrets.KUBECONFIG_DATA }}" | base64 --decode > kubeconfig
           echo "KUBECONFIG=$PWD/kubeconfig" >> $GITHUB_ENV
 
-      # 5️⃣ Deploy to Kubernetes
+      # 5️⃣ Verify Kubernetes cluster connection
+      - name: Verify cluster connection
+        run: |
+          kubectl config current-context
+          kubectl get nodes
+
+      # 6️⃣ Deploy to Kubernetes
       - name: Deploy to Kubernetes
         run: |
           kubectl apply -f k8s/prod-alert-app.yaml --validate=false
           kubectl rollout status deployment prod-alert-app
 
-      # 6️⃣ Success Email
+      # 7️⃣ Send Success Email
       - name: Send Success Email
         if: success()
         uses: dawidd6/action-send-mail@v3
@@ -58,11 +58,11 @@ jobs:
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }}
           subject: "✅ Prod Alert App Deployment Successful"
-          body: "Deployment to Kubernetes completed successfully."
+          body: "Deployment to Kubernetes completed successfully for prod-alert-app."
           to: "sashwini239@gmail.com"
           from: "sashwini239@gmail.com"
 
-      # 7️⃣ Failure Email
+      # 8️⃣ Send Failure Email
       - name: Send Failure Email
         if: failure()
         uses: dawidd6/action-send-mail@v3
@@ -72,6 +72,6 @@ jobs:
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }}
           subject: "❌ Prod Alert App Deployment Failed"
-          body: "Deployment failed. Check GitHub Actions logs."
+          body: "Deployment failed. Please check GitHub Actions logs."
           to: "sashwini239@gmail.com"
           from: "sashwini239@gmail.com"
