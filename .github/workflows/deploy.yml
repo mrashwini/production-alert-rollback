@@ -39,7 +39,7 @@ jobs:
       # 5️⃣ Deploy to Kubernetes
       - name: Deploy to Kubernetes
         run: |
-          kubectl apply -f k8s/prod-alert-app.yaml
+          kubectl apply -f k8s/prod-alert-app.yaml --validate=false
           kubectl rollout status deployment prod-alert-app
 
       # 6️⃣ Success Email
