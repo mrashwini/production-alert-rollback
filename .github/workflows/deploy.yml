@@ -30,11 +30,17 @@ jobs:
           push: true
           tags: docker.io/${{ secrets.DOCKER_USERNAME }}/prod-alert-app:latest
 
+      - name: Verify cluster connection
+        run: |
+         kubectl config current-context
+         kubectl get nodes
+
+
       # 4️⃣ Setup kubeconfig
       - name: Configure kubeconfig
         run: |
           echo "${{ secrets.KUBECONFIG_DATA }}" | base64 --decode > kubeconfig
-          export KUBECONFIG=$PWD/kubeconfig
+          echo "KUBECONFIG=$PWD/kubeconfig" >> $GITHUB_ENV
 
       # 5️⃣ Deploy to Kubernetes
       - name: Deploy to Kubernetes
