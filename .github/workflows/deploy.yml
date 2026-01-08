@@ -7,14 +7,14 @@ on:
 
 jobs:
   build-deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       # 1️⃣ Checkout code
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      # 2️⃣ Login to Docker Hub
+      # 2️⃣ Log in to Docker Hub
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
@@ -30,25 +30,19 @@ jobs:
           push: true
           tags: docker.io/darklord995/prod-alert-app:latest
 
-      # 4️⃣ Configure kubeconfig
-      - name: Configure kubeconfig
+      # 4️⃣ Verify Kubernetes (Docker Desktop)
+      - name: Verify Kubernetes
         run: |
-          echo "${{ secrets.KUBECONFIG_DATA }}" | base64 --decode > kubeconfig
-          echo "KUBECONFIG=$PWD/kubeconfig" >> $GITHUB_ENV
-
-      # 5️⃣ Verify cluster connection
-      - name: Verify cluster connection
-        run: |
-          kubectl config current-context
+          kubectl cluster-info
           kubectl get nodes
 
-      # 6️⃣ Deploy to Kubernetes
+      # 5️⃣ Deploy to Kubernetes
       - name: Deploy to Kubernetes
         run: |
-          kubectl apply -f k8s/prod-alert-app.yaml --validate=false
+          kubectl apply -f k8s/prod-alert-app.yaml
           kubectl rollout status deployment prod-alert-app
 
-      # 7️⃣ Send success email
+      # 6️⃣ Success Email
       - name: Send Success Email
         if: success()
         uses: dawidd6/action-send-mail@v3
@@ -58,11 +52,11 @@ jobs:
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }}
           subject: "✅ Prod Alert App Deployment Successful"
-          body: "Deployment to Kubernetes completed successfully."
+          body: "Deployment completed successfully."
           to: "sashwini239@gmail.com"
           from: "sashwini239@gmail.com"
 
-      # 8️⃣ Send failure email
+      # 7️⃣ Failure Email
       - name: Send Failure Email
         if: failure()
         uses: dawidd6/action-send-mail@v3

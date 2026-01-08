@@ -1,23 +1,14 @@
-# Use official Python image
 FROM python:3.13-slim
-
-# Set working directory
 WORKDIR /app
 
-# Copy requirements (we have only Flask)
-COPY requirements.txt .
-
-# Install dependencies
+# Copy requirements from app folder (relative to build context)
+COPY app/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the app code
-COPY . .
+# Copy the rest of the app code
+COPY app/ .
 
-# Expose port
 EXPOSE 5000
-
-# Set default environment variable
 ENV APP_VERSION=v1
 
-# Command to run the app
 CMD ["python", "app.py"]
