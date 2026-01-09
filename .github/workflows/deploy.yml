@@ -10,7 +10,7 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      # 1️⃣ Checkout code
+      # 1️⃣ Checkout repo
       - name: Checkout repo
         uses: actions/checkout@v3
 
@@ -21,7 +21,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # 3️⃣ Build & Push Docker Image
+      # 3️⃣ Build & push Docker image
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v4
         with:
@@ -30,19 +30,25 @@ jobs:
           push: true
           tags: docker.io/darklord995/prod-alert-app:latest
 
-      # 4️⃣ Verify Kubernetes (Docker Desktop)
-      - name: Verify Kubernetes
+      # 4️⃣ Configure kubeconfig
+      - name: Configure kubeconfig
         run: |
-          kubectl cluster-info
+          echo "${{ secrets.KUBECONFIG_DATA }}" | base64 --decode > kubeconfig
+          echo "KUBECONFIG=$PWD/kubeconfig" >> $GITHUB_ENV
+
+      # 5️⃣ Verify Kubernetes cluster
+      - name: Verify cluster
+        run: |
+          kubectl config current-context
           kubectl get nodes
 
-      # 5️⃣ Deploy to Kubernetes
+      # 6️⃣ Deploy to Kubernetes
       - name: Deploy to Kubernetes
         run: |
-          kubectl apply -f k8s/prod-alert-app.yaml
+          kubectl apply -f k8s/prod-alert-app.yaml --validate=false
           kubectl rollout status deployment prod-alert-app
 
-      # 6️⃣ Success Email
+      # 7️⃣ Send success email
       - name: Send Success Email
         if: success()
         uses: dawidd6/action-send-mail@v3
@@ -52,11 +58,11 @@ jobs:
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }}
           subject: "✅ Prod Alert App Deployment Successful"
-          body: "Deployment completed successfully."
+          body: "Deployment to Kubernetes completed successfully."
           to: "sashwini239@gmail.com"
           from: "sashwini239@gmail.com"
 
-      # 7️⃣ Failure Email
+      # 8️⃣ Send failure email
       - name: Send Failure Email
         if: failure()
         uses: dawidd6/action-send-mail@v3
